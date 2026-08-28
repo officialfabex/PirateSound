@@ -1414,41 +1414,74 @@ body {
   }
 
   /* =========================================================
-     DURATION LOADING
-     Load metadata for the whole visible library with a small
-     concurrency limit, so every track gets a duration without
-     opening dozens of audio requests at the same time.
+     DURATION LOADING — FAST / FULL
+     Load metadata for ALL tracks in parallel. Durations are cached
+     separately so later visits can render them immediately.
   ==========================================================*/
-  const DURATION_CONCURRENCY = 4;
+  const durationAudioPool = new Map();
 
-  function loadDurationForTrack(t, idx, owner, repo){
+  function durationCacheKey(owner, repo){
+    return 'piratesound.durationCache:' + owner + '/' + repo;
+  }
+  function readDurationCache(owner, repo){
+    try { return JSON.parse(localStorage.getItem(durationCacheKey(owner, repo)) || '{}'); }
+    catch(e){ return {}; }
+  }
+  function saveDurationCache(owner, repo, map){
+    try { localStorage.setItem(durationCacheKey(owner, repo), JSON.stringify(map)); }
+    catch(e){}
+  }
+
+  function applyCachedDurations(owner, repo, tracks){
+    const cached = readDurationCache(owner, repo);
+    let hits = 0;
+    tracks.forEach(t => {
+      const d = cached[t.url];
+      if(isFinite(d) && d > 0){
+        t.duration = d;
+        t.durationLoaded = true;
+        hits++;
+      }
+    });
+    if(hits) log('Instant duration cache: ' + hits + '/' + tracks.length + ' tracks.', 'ok');
+  }
+
+  function updateTrackDurationUI(idx, duration){
+    const row = document.getElementById('track-row-' + idx);
+    const el = row && row.querySelector('.t-dur');
+    if(el) el.textContent = fmtTime(duration);
+  }
+
+  function loadDurationForTrack(t, idx, owner, repo, durationCache){
     if(!t || t.type !== 'real' || t.durationLoaded || !t.url) return Promise.resolve();
+
     return new Promise(resolve => {
       const a = document.createElement('audio');
-      let settled = false;
+      a.preload = 'metadata';
+      a.src = t.url;
+      durationAudioPool.set(t.url, a); // keep the element alive until metadata arrives
+
+      let done = false;
       const finish = (ok) => {
-        if(settled) return;
-        settled = true;
+        if(done) return;
+        done = true;
         if(ok && isFinite(a.duration) && a.duration > 0){
           t.duration = a.duration;
           t.durationLoaded = true;
-          try{ saveTrackCache(owner, repo, state.tracks); }catch(e){}
-          const row = document.getElementById('track-row-' + idx);
-          const el = row && row.querySelector('.t-dur');
-          if(el) el.textContent = fmtTime(t.duration);
-          log('Duration loaded: ' + t.title + ' = ' + fmtTime(t.duration), 'ok');
-        } else {
-          log('Duration unavailable: ' + t.title, 'warn');
+          durationCache[t.url] = a.duration;
+          updateTrackDurationUI(idx, a.duration);
         }
-        a.removeAttribute('src');
-        try{ a.load(); }catch(e){}
+        durationAudioPool.delete(t.url);
+        try { a.removeAttribute('src'); a.load(); } catch(e){}
         resolve();
       };
-      a.preload = 'metadata';
-      a.src = t.url;
+
       a.addEventListener('loadedmetadata', () => finish(true), {once:true});
+      a.addEventListener('durationchange', () => {
+        if(isFinite(a.duration) && a.duration > 0) finish(true);
+      });
       a.addEventListener('error', () => finish(false), {once:true});
-      setTimeout(() => finish(false), 12000);
+      setTimeout(() => finish(false), 10000);
     });
   }
 
@@ -1457,16 +1490,16 @@ body {
       .map((t, idx) => ({t, idx}))
       .filter(({t}) => t.type === 'real' && !t.durationLoaded && t.url);
     if(!queue.length) return;
-    log('Loading durations for ' + queue.length + ' tracks (concurrency ' + DURATION_CONCURRENCY + ').', 'info');
-    let cursor = 0;
-    async function worker(){
-      while(cursor < queue.length){
-        const item = queue[cursor++];
-        await loadDurationForTrack(item.t, item.idx, owner, repo);
-      }
-    }
-    await Promise.all(Array.from({length: Math.min(DURATION_CONCURRENCY, queue.length)}, worker));
-    log('Duration loading finished.', 'info');
+
+    log('Starting FULL duration preload: ' + queue.length + ' tracks in parallel.', 'info');
+    const durationCache = readDurationCache(owner, repo);
+
+    // Start every metadata request immediately. This is deliberately aggressive:
+    // the user asked for everything to load as fast as possible.
+    await Promise.all(queue.map(({t, idx}) => loadDurationForTrack(t, idx, owner, repo, durationCache)));
+    saveDurationCache(owner, repo, durationCache);
+    saveTrackCache(owner, repo, state.tracks);
+    log('FULL duration preload finished: ' + state.tracks.filter(t => t.durationLoaded).length + '/' + state.tracks.length + '.', 'ok');
   }
 
   /* =========================================================
@@ -2018,7 +2051,7 @@ body {
     if(!state.tracks.length){
       const cached=readTrackCache(owner,repo);
       if(cached&&cached.length){
-        state.tracks=cached; state.currentIndex=-1; state.isPlaying=false;
+        state.tracks=cached; applyCachedDurations(owner, repo, state.tracks); state.currentIndex=-1; state.isPlaying=false;
         renderTrackList(document.getElementById('searchInput').value); renderNowPlaying(); updatePlayIcon();
         log('Instant library from cache: '+cached.length+' tracks.','ok');
       }
@@ -2030,6 +2063,7 @@ body {
       const old=currentTrack();
       saveTrackCache(owner,repo,tracks);
       state.tracks=tracks;
+      applyCachedDurations(owner, repo, state.tracks);
       state.currentIndex=old&&old.url?tracks.findIndex(t=>t.url===old.url):-1;
       renderTrackList(document.getElementById('searchInput').value); renderNowPlaying(); updatePlayIcon();
       log('GitHub refresh complete: '+tracks.length+' tracks.','ok');
@@ -2039,7 +2073,7 @@ body {
       else log('Keeping current library; no UI reset.','info');
     }
 
-    // Load every track duration in the background after the library is visible.
+    // Durations are visible from cache immediately; any missing ones load all at once.
     loadAllDurations(owner, repo).catch(e => log('Duration scan failed: ' + e.message, 'warn'));
 
     try{
