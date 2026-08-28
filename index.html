@@ -1238,8 +1238,12 @@ body {
     }catch(e){}
   }
 
-  window.addEventListener('pagehide', savePlaybackState);
-  window.addEventListener('beforeunload', savePlaybackState);
+  // Use pagehide only. beforeunload can prevent the browser's back/forward cache
+  // and may make the page look like it is reloading when returning to it.
+  window.addEventListener('pagehide', (event) => {
+    savePlaybackState();
+    log('Page hidden/pagehide. persisted=' + !!event.persisted, 'info');
+  });
   document.addEventListener('visibilitychange', () => {
     // Never pause just because the page is hidden/minimized. The persistent
     // <audio> element + Media Session are intentionally kept alive.
@@ -1259,12 +1263,26 @@ body {
   });
 
 
-  window.addEventListener('pageshow', () => {
+  window.addEventListener('pageshow', (event) => {
+    log('Page shown. persisted=' + !!event.persisted, 'info');
     if(state.isPlaying && audioCtx && audioCtx.state === 'suspended'){
       audioCtx.resume().catch(() => {});
     }
     if(state.isPlaying && realAudioEl && realAudioEl.paused && currentTrack() && currentTrack().type === 'real'){
       realAudioEl.play().catch(() => {});
+    }
+  });
+
+  // Modern Page Lifecycle API: when supported, preserve the player while the
+  // browser freezes the tab instead of treating it as a fresh navigation.
+  document.addEventListener('freeze', () => {
+    savePlaybackState();
+    log('Browser froze the page; player state saved.', 'info');
+  });
+  document.addEventListener('resume', () => {
+    log('Browser resumed the page.', 'info');
+    if(state.isPlaying && audioCtx && audioCtx.state === 'suspended'){
+      audioCtx.resume().catch(() => {});
     }
   });
 
