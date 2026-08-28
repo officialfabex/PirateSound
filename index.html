@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PirateSound</title>
-<link rel="icon" href="icon.ico" type="image/x-icon">
-<link rel="icon" type="image/png" href="app-logo.png">
+<link rel="icon" type="image/png" href="PirateSound%20Logo.png">
+<link rel="apple-touch-icon" href="PirateSound%20Logo.png">
+<link rel="icon" type="image/png" href="PirateSound%20Logo.png">
+<link rel="apple-touch-icon" href="PirateSound%20Logo.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0612">
 <meta name="mobile-web-app-capable" content="yes">
@@ -192,17 +194,18 @@
   .p-progress { display: flex; align-items: center; gap: 10px; width: 100%; }
   .p-time { font-size: 10.5px; font-weight: 500; color: var(--text-dimmer); width: 34px; font-variant-numeric: tabular-nums; }
   .p-time.right { text-align: right; }
-  .bar-track { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.1); position: relative; cursor: pointer; }
+  .bar-track { flex: 1; height: 10px; touch-action: none; user-select: none; border-radius: 4px; background: rgba(255,255,255,0.13); position: relative; cursor: pointer; }
   .bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: var(--text); width: 0%; transition: background 0.3s ease; }
   .bar-fill.slow { background: var(--accent-slow); }
   .bar-fill.normal { background: var(--accent); }
   .bar-fill.fast { background: var(--accent-fast); }
   .bar-knob {
-    position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; 
+    position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; 
     background: #fff; transform: translate(-50%, -50%); left: 0%; opacity: 0; transition: opacity 0.2s ease, transform 0.1s;
   }
-  .bar-track:hover .bar-knob { opacity: 1; }
+  .bar-track:hover .bar-knob, .bar-track:focus-within .bar-knob { opacity: 1; }
   .bar-track:active .bar-knob { transform: translate(-50%, -50%) scale(1.3); }
+  .bar-track:focus { outline: 2px solid rgba(168,85,247,.45); outline-offset: 3px; }
 
   .p-right { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
   .p-right .segmented { width: 170px; }
@@ -937,6 +940,22 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+
+/* Subtle visual polish */
+.topbar, .sidebar, .panel, .player, .debug-panel {
+  border-color: rgba(255,255,255,.13) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 32px rgba(0,0,0,.22) !important;
+}
+.track-row { transition: background .16s ease, transform .12s ease, border-color .16s ease; }
+.track-row:hover { background: rgba(255,255,255,.075); }
+.track-row.playing { box-shadow: inset 2px 0 0 rgba(168,85,247,.8); }
+.search-wrap { box-shadow: inset 0 1px 0 rgba(255,255,255,.045); }
+.quick-btn, .info-badge-btn, .utility-btn, .play-btn { transition: transform .14s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.play-btn { box-shadow: 0 5px 18px rgba(0,0,0,.24); }
+.bar-track { height: 7px !important; border-radius: 999px !important; }
+.bar-fill { border-radius: 999px !important; }
+.bar-knob { width: 12px !important; height: 12px !important; }
+
 </style>
 </head>
 <body>
@@ -1013,7 +1032,7 @@ body {
     <button class="quick-btn" id="sourceBtn" type="button" title="Github Repository">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c.7-3.5 3.1-5.4 7-5.4s6.3 1.9 7 5.4"/></svg><span>Github Repository</span></button>
     <button class="utility-btn" id="debugToggle" title="Debug Console" aria-label="Debug Console">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/></svg>
       <span class="ping" id="debugPing"></span>
     </button>
 </div>
@@ -1040,19 +1059,19 @@ body {
       <button class="choice-btn" data-speed-choice="fast">Fast <span>1.15×</span></button>
     </div>
     <div class="modal-actions">
-      <button class="modal-secondary" data-close-modal="speedModal">Anuluj</button>
-      <button class="modal-primary" id="speedConfirm">Zatwierdź</button>
+      <button class="modal-secondary" data-close-modal="speedModal">Cancel</button>
+      <button class="modal-primary" id="speedConfirm">Confirm</button>
     </div>
   </div>
 </div>
 <!-- Song load error modal -->
 <div class="modal-overlay" id="songErrorModal">
   <div class="modal-card glass">
-    <h3>Piosenka nie została załadowana</h3>
-    <p id="songErrorText">Nie udało się załadować tego utworu.</p>
+    <h3>Song could not be loaded</h3>
+    <p id="songErrorText">This song could not be loaded.</p>
     <div class="modal-actions">
       <button class="modal-secondary" id="songSkipBtn">Skip</button>
-      <button class="modal-primary" id="songRetryBtn">Spróbuj ponownie</button>
+      <button class="modal-primary" id="songRetryBtn">Try again</button>
     </div>
   </div>
 </div>
@@ -1061,14 +1080,14 @@ body {
 <div class="modal-overlay" id="sourceModal">
   <div class="modal-card glass">
     <h3>Github Source</h3>
-    <p>Podaj źródło biblioteki muzyki.</p>
+    <p>Enter the music library source.</p>
     <div class="source-fields">
       <label>Owner<input id="repoOwner" value="" placeholder="owner" spellcheck="false"></label>
       <label>Repository<input id="repoName" value="" placeholder="repository" spellcheck="false"></label>
     </div>
     <div class="modal-actions">
-      <button class="modal-secondary" data-close-modal="sourceModal">Anuluj</button>
-      <button class="modal-primary" id="sourceConfirm">Zatwierdź</button>
+      <button class="modal-secondary" data-close-modal="sourceModal">Cancel</button>
+      <button class="modal-primary" id="sourceConfirm">Confirm</button>
     </div>
   </div>
 </div>
@@ -1167,7 +1186,8 @@ body {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title || 'Untitled Track',
         artist: 'PirateSound',
-        album: 'PirateSound'
+        album: 'PirateSound',
+        artwork: [{ src: new URL('PirateSound Logo.png', document.baseURI).href, sizes: '512x512', type: 'image/png' }]
       });
       navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
       const actions = {
@@ -1211,6 +1231,7 @@ body {
       const t = currentTrack();
       if(!t) return;
       localStorage.setItem('piratesound.lastTrack', String(state.currentIndex));
+      if(t.url) localStorage.setItem('piratesound.lastUrl', t.url);
       localStorage.setItem('piratesound.lastTime', String(
         t.type === 'real' ? (mobileAudio.currentTime || 0) : 0
       ));
@@ -1371,6 +1392,8 @@ body {
         id: 'r'+i, 
         title: cleanName, 
         trackNum: trackNum, 
+        orderNumber: numMatch ? parseInt(numMatch[1], 10) : Number.POSITIVE_INFINITY,
+        path: f.path,
         type: 'real', 
         url: rawUrl, 
         durationLoaded: false, 
@@ -1378,32 +1401,37 @@ body {
       };
     });
 
-    // Prawdziwe sortowanie numeryczne
-    parsed.sort((a, b) => a.trackNum - b.trackNum);
+    // Stabilna kolejność: najpierw numery z nazw plików (01, 02, 10...),
+    // potem naturalne sortowanie ścieżki dla plików bez numerów.
+    parsed.sort((a, b) => {
+      if(a.orderNumber !== b.orderNumber) return a.orderNumber - b.orderNumber;
+      return String(a.path).localeCompare(String(b.path), undefined, {numeric:true, sensitivity:'base'});
+    });
+    parsed.forEach((t, i) => { if(!Number.isFinite(t.orderNumber)) t.trackNum = i + 1; });
+    log('Final queue order: ' + parsed.map((t, i) => (i + 1) + ':' + t.title).join(' | '), 'info');
 
     return parsed;
   }
 
   /* =========================================================
-     PRELOAD DURATIONS IN BACKGROUND
+     LAZY DURATION LOADING
+     Avoid creating an audio element for every song.
   ==========================================================*/
-  function preloadDurations() {
-    state.tracks.forEach((t, idx) => {
-      if (t.type === 'real' && !t.durationLoaded) {
-        const audio = document.createElement('audio');
-        audio.preload = 'metadata';
-        audio.src = t.url;
-        audio.onloadedmetadata = () => {
-          t.duration = audio.duration;
-          t.durationLoaded = true;
-          const row = document.getElementById('track-row-' + idx);
-          if (row) {
-            const durEl = row.querySelector('.t-dur');
-            if (durEl) durEl.textContent = fmtTime(t.duration);
-          }
-        };
+  function loadDurationForTrack(t, idx){
+    if(!t || t.type !== 'real' || t.durationLoaded || !t.url) return;
+    const a = document.createElement('audio');
+    a.preload = 'metadata';
+    a.src = t.url;
+    a.addEventListener('loadedmetadata', () => {
+      if(isFinite(a.duration) && a.duration > 0){
+        t.duration = a.duration; t.durationLoaded = true;
+        const row = document.getElementById('track-row-' + idx);
+        const el = row && row.querySelector('.t-dur');
+        if(el) el.textContent = fmtTime(t.duration);
       }
-    });
+      a.removeAttribute('src'); a.load();
+    }, {once:true});
+    a.addEventListener('error', () => { a.removeAttribute('src'); a.load(); }, {once:true});
   }
 
   /* =========================================================
@@ -1412,8 +1440,10 @@ body {
   let realAudioEl = null;
   let realSourceNode = null;
   let synthState = null;
+  let playbackRequestToken = 0;
 
-  function stopAllPlayback(){
+  function stopAllPlayback(invalidatePending = true){
+    if(invalidatePending) playbackRequestToken++;
     if(realAudioEl){ try{ realAudioEl.pause(); }catch(e){} }
     if(synthState){
       synthState.activeOscillators.forEach(o => { try{ o.stop(); }catch(e){} });
@@ -1465,137 +1495,62 @@ body {
     try{ audio.removeEventListener('stalled', handlers.onStalled); }catch(e){}
   }
 
-  function loadRealTrackWithRetries(track){
-    if(!realAudioEl){
-      realAudioEl = mobileAudio;
-    }
-
+  function loadRealTrackWithRetries(track, requestToken){
+    if(!realAudioEl) realAudioEl = mobileAudio;
     const token = ++realLoadToken;
-
     return new Promise((resolve, reject) => {
-      let attempt = 0;
-      let finished = false;
-
+      let attempt = 0, finished = false;
       const failAttempt = (reason) => {
-        if(finished || token !== realLoadToken) return;
+        if(finished || token !== realLoadToken || requestToken !== playbackRequestToken) return;
         attempt++;
-        log('Track load attempt ' + attempt + '/' + MAX_TRACK_LOAD_ATTEMPTS + ' failed: ' + reason, 'warn');
-        if(attempt >= MAX_TRACK_LOAD_ATTEMPTS){
-          finished = true;
-          reject(new Error(reason || 'Audio file could not be loaded.'));
-          return;
-        }
-        setTimeout(() => runAttempt(), 250);
+        log('Load failed ' + attempt + '/' + MAX_TRACK_LOAD_ATTEMPTS + ': ' + reason, 'warn');
+        if(attempt >= MAX_TRACK_LOAD_ATTEMPTS){ finished=true; reject(new Error(reason)); return; }
+        setTimeout(runAttempt, 300);
       };
-
       const runAttempt = () => {
-        if(finished || token !== realLoadToken) return;
-        let settled = false;
-        let timeoutId = null;
-        const handlers = {};
-
-        const cleanup = () => {
-          if(timeoutId) clearTimeout(timeoutId);
-          cleanupAudioAttempt(realAudioEl, handlers);
-        };
-
-        const succeed = () => {
-          if(finished || settled || token !== realLoadToken) return;
-          settled = true;
-          cleanup();
-          finished = true;
-          resolve();
-        };
-
-        handlers.onLoaded = () => succeed();
-        handlers.onError = () => {
-          if(finished || settled || token !== realLoadToken) return;
-          settled = true;
-          cleanup();
-          const mediaError = realAudioEl && realAudioEl.error;
-          let reason = 'Plik audio jest niedostępny lub nieprawidłowy.';
-          if(mediaError){
-            if(mediaError.code === 1) reason = 'Ładowanie pliku zostało przerwane.';
-            else if(mediaError.code === 2) reason = 'Błąd sieci podczas ładowania pliku.';
-            else if(mediaError.code === 3) reason = 'Plik audio jest uszkodzony lub nie można go zdekodować.';
-            else if(mediaError.code === 4) reason = 'Format pliku nie jest obsługiwany.';
-          }
-          failAttempt(reason);
-        };
-        handlers.onAbort = () => {
-          if(finished || settled || token !== realLoadToken) return;
-          settled = true;
-          cleanup();
-          failAttempt('Ładowanie zostało przerwane.');
-        };
-        handlers.onStalled = () => log('Audio stalled; waiting before timeout...', 'warn');
-
-        realAudioEl.addEventListener('loadeddata', handlers.onLoaded, { once: true });
-        realAudioEl.addEventListener('canplay', handlers.onLoaded, { once: true });
-        realAudioEl.addEventListener('error', handlers.onError, { once: true });
-        realAudioEl.addEventListener('abort', handlers.onAbort, { once: true });
-        realAudioEl.addEventListener('stalled', handlers.onStalled);
-
-        realAudioEl.src = track.url;
-        realAudioEl.preload = 'auto';
-        realAudioEl.load();
-
-        timeoutId = setTimeout(() => {
-          if(finished || settled || token !== realLoadToken) return;
-          settled = true;
-          cleanup();
-          failAttempt('Przekroczono limit czasu ładowania.');
-        }, TRACK_LOAD_TIMEOUT_MS);
-
-        log('Loading "' + track.title + '" (attempt ' + (attempt + 1) + '/' + MAX_TRACK_LOAD_ATTEMPTS + ').', 'info');
+        if(finished || token !== realLoadToken || requestToken !== playbackRequestToken) return;
+        let settled=false, timeoutId=null;
+        const handlers={};
+        const cleanup=()=>{ if(timeoutId) clearTimeout(timeoutId); cleanupAudioAttempt(realAudioEl, handlers); };
+        const succeed=()=>{ if(finished||settled||token!==realLoadToken||requestToken!==playbackRequestToken)return; settled=true;cleanup();finished=true;resolve(); };
+        handlers.onLoaded=succeed;
+        handlers.onError=()=>{ if(finished||settled)return; settled=true;cleanup(); const code=realAudioEl.error&&realAudioEl.error.code; const reason=code===2?'Network error.':code===3?'The file could not be decoded.':code===4?'The format is not supported.':'The audio file is unavailable.'; failAttempt(reason); };
+        handlers.onAbort=()=>{ if(finished||settled)return; settled=true;cleanup();failAttempt('Ładowanie przerwane.'); };
+        handlers.onStalled=()=>log('Audio stalled: '+track.title,'warn');
+        realAudioEl.addEventListener('loadeddata',handlers.onLoaded,{once:true});
+        realAudioEl.addEventListener('canplay',handlers.onLoaded,{once:true});
+        realAudioEl.addEventListener('error',handlers.onError,{once:true});
+        realAudioEl.addEventListener('abort',handlers.onAbort,{once:true});
+        realAudioEl.addEventListener('stalled',handlers.onStalled);
+        const url=attempt===0?track.url:track.url+(track.url.includes('?')?'&':'?')+'_ps_retry='+attempt;
+        realAudioEl.preload='auto'; realAudioEl.src=url; realAudioEl.load();
+        timeoutId=setTimeout(()=>{ if(finished||settled||token!==realLoadToken||requestToken!==playbackRequestToken)return; settled=true;cleanup();failAttempt('Przekroczono 12 s ładowania.'); },12000);
+        log('Loading "'+track.title+'" attempt '+(attempt+1)+'/'+MAX_TRACK_LOAD_ATTEMPTS,'info');
       };
-
       runAttempt();
     });
   }
 
   async function playRealTrack(track){
-    if(!realAudioEl){
-      realAudioEl = mobileAudio;
-    }
-
-    closeSongErrorModal();
-    state.failedTrack = null;
-    state.failedTrackAttempts = 0;
-
+    if(!realAudioEl) realAudioEl=mobileAudio;
+    closeSongErrorModal(); state.failedTrack=null; state.failedTrackAttempts=0;
+    const requestToken=playbackRequestToken;
+    log('Playback request -> ['+state.currentIndex+'] '+track.title,'info');
     try{
-      await loadRealTrackWithRetries(track);
-      if(track !== currentTrack() || !state.isPlaying) return;
-
-      realAudioEl.playbackRate = SPEED_RATES[state.speed];
-      try{
-        realAudioEl.preservesPitch = false;
-        realAudioEl.mozPreservesPitch = false;
-        realAudioEl.webkitPreservesPitch = false;
-      }catch(e){}
-
+      await loadRealTrackWithRetries(track,requestToken);
+      if(track!==currentTrack()||!state.isPlaying||requestToken!==playbackRequestToken)return;
+      realAudioEl.playbackRate=SPEED_RATES[state.speed];
+      try{realAudioEl.preservesPitch=false;realAudioEl.mozPreservesPitch=false;realAudioEl.webkitPreservesPitch=false;}catch(e){}
       connectRealAudioOnce();
       await realAudioEl.play();
-
-      if('mediaSession' in navigator){
-        try{
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: track.title,
-            artist: 'PirateSound',
-            album: 'PirateSound'
-          });
-          navigator.mediaSession.playbackState = 'playing';
-        }catch(e){}
-      }
-      log('Playing: ' + track.title, 'ok');
+      updateMediaSession(track,true);
+      log('Playing ['+state.currentIndex+'] '+track.title,'ok');
     }catch(err){
-      if(track !== currentTrack()) return;
-      state.isPlaying = false;
-      updatePlayIcon();
-      updateMediaSession(track, false);
-      stopAllPlayback();
-      log('Track failed after ' + MAX_TRACK_LOAD_ATTEMPTS + ' attempts: ' + err.message, 'err');
-      showSongErrorModal(track, 'Spróbuj ponownie albo pomiń ten utwór.');
+      if(track!==currentTrack()||requestToken!==playbackRequestToken)return;
+      state.isPlaying=false; updatePlayIcon(); updateMediaSession(track,false);
+      try{realAudioEl.pause();}catch(e){}
+      log('Track failed after '+MAX_TRACK_LOAD_ATTEMPTS+' attempts: '+err.message,'err');
+      showSongErrorModal(track,'Try again albo pomiń ten utwór.');
     }
   }
 
@@ -1663,10 +1618,12 @@ body {
     if(i < 0 || i >= state.tracks.length) return;
     ensureAudioGraph();
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    stopAllPlayback();
+    playbackRequestToken++;
+    stopAllPlayback(false);
     state.currentIndex = i;
     state.isPlaying = true;
     const track = state.tracks[i];
+    log('QUEUE SELECT [' + i + '/' + (state.tracks.length - 1) + '] ' + track.title + ' | mode=' + state.mode, 'info');
     renderNowPlaying();
     updatePlayingRowUI();
     applySpeedFX(state.speed);
@@ -1709,7 +1666,8 @@ body {
   }
 
   function onTrackEnded(){
-    log('Track ended, mode: ' + state.mode, 'info');
+    if(!state.tracks.length) return;
+    log('ENDED idx=' + state.currentIndex + ' mode=' + state.mode, 'info');
     if(state.mode === 'loop'){ playTrackAtIndex(state.currentIndex); return; }
     if(state.mode === 'shuffle'){ playTrackAtIndex(pickNextShuffleIndex()); return; }
     playTrackAtIndex((state.currentIndex + 1) % state.tracks.length);
@@ -1809,6 +1767,7 @@ body {
       `;
       row.addEventListener('click', () => playTrackAtIndex(idx));
       trackListEl.appendChild(row);
+      if(renderIdx < 12) setTimeout(() => loadDurationForTrack(t, idx), renderIdx * 35);
     });
   }
 
@@ -1915,10 +1874,20 @@ body {
   document.getElementById('prevBtn').addEventListener('click', prevTrack);
 
   const progressTrack = document.getElementById('progressTrack');
-  progressTrack.addEventListener('click', (e) => {
-    const rect = progressTrack.getBoundingClientRect();
-    seekToFraction((e.clientX - rect.left) / rect.width);
+  let progressDragging = false, progressPointerId = null;
+  function seekFromPointer(e){
+    const r = progressTrack.getBoundingClientRect();
+    seekToFraction((e.clientX-r.left)/Math.max(1,r.width));
+  }
+  progressTrack.addEventListener('pointerdown', e => {
+    progressDragging = true; progressPointerId = e.pointerId;
+    try{progressTrack.setPointerCapture(e.pointerId);}catch(_){}
+    seekFromPointer(e); e.preventDefault();
   });
+  progressTrack.addEventListener('pointermove', e => { if(progressDragging && e.pointerId===progressPointerId){ seekFromPointer(e); e.preventDefault(); } });
+  const endDrag = e => { if(e.pointerId!==progressPointerId) return; progressDragging=false; try{progressTrack.releasePointerCapture(e.pointerId);}catch(_){} progressPointerId=null; };
+  progressTrack.addEventListener('pointerup', endDrag);
+  progressTrack.addEventListener('pointercancel', endDrag);
 
   document.getElementById('searchInput').addEventListener('input', (e) => renderTrackList(e.target.value));
   const speedModal = document.getElementById('speedModal');
@@ -2002,69 +1971,45 @@ body {
   /* =========================================================
      LIBRARY LOADING
   ==========================================================*/
+  function cacheKey(owner,repo){ return 'piratesound.trackCache:'+owner+'/'+repo; }
+  function saveTrackCache(owner,repo,tracks){ try{localStorage.setItem(cacheKey(owner,repo),JSON.stringify(tracks));}catch(e){} }
+  function readTrackCache(owner,repo){ try{return JSON.parse(localStorage.getItem(cacheKey(owner,repo))||'null');}catch(e){return null;} }
+
   async function loadLibrary(isRefetch){
-    const ownerEl = document.getElementById('repoOwner');
-    const repoEl = document.getElementById('repoName');
+    const owner=document.getElementById('repoOwner').value.trim();
+    const repo=document.getElementById('repoName').value.trim();
+    if(!owner||!repo){ log('GitHub Repository is empty.','info'); return; }
+    try{localStorage.setItem('piratesound.githubOwner',owner);localStorage.setItem('piratesound.githubRepo',repo);}catch(e){}
 
-    const owner = ownerEl.value.trim();
-    const repo = repoEl.value.trim();
-
-    if(!owner || !repo){
-      log('GitHub Repository is empty. Enter owner and repository to load tracks.', 'info');
-      state.tracks = [];
-      state.currentIndex = -1;
-      state.isPlaying = false;
-      stopAllPlayback();
-      renderTrackList(document.getElementById('searchInput').value);
-      renderNowPlaying();
-      updatePlayIcon();
-      return;
-    }
-
-    try{
-      localStorage.setItem('piratesound.githubOwner', owner);
-      localStorage.setItem('piratesound.githubRepo', repo);
-    }catch(e){}
-
-    log((isRefetch ? 'Retrying' : 'Starting') + ': ' + owner + '/' + repo, 'info');
-
-    try{
-      const tracks = await fetchGithubTracks(owner, repo);
-      state.tracks = tracks;
-      state.currentIndex = -1;
-      state.isPlaying = false;
-      log('Loaded ' + tracks.length + ' tracks.', 'ok');
-    }catch(e){
-      log('Error: ' + e.message, 'warn');
-      state.tracks = [];
-      state.currentIndex = -1;
-      state.isPlaying = false;
-      stopAllPlayback();
-    }
-    renderTrackList(document.getElementById('searchInput').value);
-    renderNowPlaying();
-    updatePlayIcon();
-    
-    preloadDurations();
-
-    // Restore last track/time after the repository has loaded.
-    try{
-      const lastIndex = parseInt(localStorage.getItem('piratesound.lastTrack') || '-1', 10);
-      const lastTime = parseFloat(localStorage.getItem('piratesound.lastTime') || '0');
-      if(lastIndex >= 0 && lastIndex < state.tracks.length){
-        state.currentIndex = lastIndex;
-        state.isPlaying = false;
-        renderNowPlaying();
-        renderTrackList(document.getElementById('searchInput').value);
-        if(state.tracks[lastIndex].type === 'real' && lastTime > 0){
-          mobileAudio.addEventListener('loadedmetadata', function restoreTimeOnce(){
-            if(isFinite(mobileAudio.duration)){
-              mobileAudio.currentTime = Math.min(lastTime, mobileAudio.duration);
-            }
-            mobileAudio.removeEventListener('loadedmetadata', restoreTimeOnce);
-          });
-        }
+    if(!state.tracks.length){
+      const cached=readTrackCache(owner,repo);
+      if(cached&&cached.length){
+        state.tracks=cached; state.currentIndex=-1; state.isPlaying=false;
+        renderTrackList(document.getElementById('searchInput').value); renderNowPlaying(); updatePlayIcon();
+        log('Instant library from cache: '+cached.length+' tracks.','ok');
       }
+    }
+
+    log((isRefetch?'Refreshing':'Loading')+': '+owner+'/'+repo,'info');
+    try{
+      const tracks=await fetchGithubTracks(owner,repo);
+      const old=currentTrack();
+      saveTrackCache(owner,repo,tracks);
+      state.tracks=tracks;
+      state.currentIndex=old&&old.url?tracks.findIndex(t=>t.url===old.url):-1;
+      renderTrackList(document.getElementById('searchInput').value); renderNowPlaying(); updatePlayIcon();
+      log('GitHub refresh complete: '+tracks.length+' tracks.','ok');
+    }catch(e){
+      log('GitHub refresh failed: '+e.message,'warn');
+      if(!state.tracks.length){renderTrackList(document.getElementById('searchInput').value);renderNowPlaying();updatePlayIcon();}
+      else log('Keeping current library; no UI reset.','info');
+    }
+
+    try{
+      const lastUrl=localStorage.getItem('piratesound.lastUrl')||'';
+      const lastIndex=parseInt(localStorage.getItem('piratesound.lastTrack')||'-1',10);
+      const idx=lastUrl?state.tracks.findIndex(t=>t.url===lastUrl):lastIndex;
+      if(idx>=0&&idx<state.tracks.length&&state.currentIndex===-1){state.currentIndex=idx;state.isPlaying=false;renderNowPlaying();updatePlayingRowUI();}
     }catch(e){}
   }
 
