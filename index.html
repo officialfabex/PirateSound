@@ -1042,7 +1042,7 @@ body {
 <div class="modal-overlay" id="infoModal">
   <div class="modal-card glass">
     <h3>PirateSound</h3>
-    <div class="version-tag">Version 1.0</div>
+    <div class="version-tag">Version 1.2</div>
     <p>PirateSound made by Fabex</p>
     <button class="modal-close-btn" id="modalClose">Close</button>
   </div>
@@ -1414,24 +1414,59 @@ body {
   }
 
   /* =========================================================
-     LAZY DURATION LOADING
-     Avoid creating an audio element for every song.
+     DURATION LOADING
+     Load metadata for the whole visible library with a small
+     concurrency limit, so every track gets a duration without
+     opening dozens of audio requests at the same time.
   ==========================================================*/
-  function loadDurationForTrack(t, idx){
-    if(!t || t.type !== 'real' || t.durationLoaded || !t.url) return;
-    const a = document.createElement('audio');
-    a.preload = 'metadata';
-    a.src = t.url;
-    a.addEventListener('loadedmetadata', () => {
-      if(isFinite(a.duration) && a.duration > 0){
-        t.duration = a.duration; t.durationLoaded = true;
-        const row = document.getElementById('track-row-' + idx);
-        const el = row && row.querySelector('.t-dur');
-        if(el) el.textContent = fmtTime(t.duration);
+  const DURATION_CONCURRENCY = 4;
+
+  function loadDurationForTrack(t, idx, owner, repo){
+    if(!t || t.type !== 'real' || t.durationLoaded || !t.url) return Promise.resolve();
+    return new Promise(resolve => {
+      const a = document.createElement('audio');
+      let settled = false;
+      const finish = (ok) => {
+        if(settled) return;
+        settled = true;
+        if(ok && isFinite(a.duration) && a.duration > 0){
+          t.duration = a.duration;
+          t.durationLoaded = true;
+          try{ saveTrackCache(owner, repo, state.tracks); }catch(e){}
+          const row = document.getElementById('track-row-' + idx);
+          const el = row && row.querySelector('.t-dur');
+          if(el) el.textContent = fmtTime(t.duration);
+          log('Duration loaded: ' + t.title + ' = ' + fmtTime(t.duration), 'ok');
+        } else {
+          log('Duration unavailable: ' + t.title, 'warn');
+        }
+        a.removeAttribute('src');
+        try{ a.load(); }catch(e){}
+        resolve();
+      };
+      a.preload = 'metadata';
+      a.src = t.url;
+      a.addEventListener('loadedmetadata', () => finish(true), {once:true});
+      a.addEventListener('error', () => finish(false), {once:true});
+      setTimeout(() => finish(false), 12000);
+    });
+  }
+
+  async function loadAllDurations(owner, repo){
+    const queue = state.tracks
+      .map((t, idx) => ({t, idx}))
+      .filter(({t}) => t.type === 'real' && !t.durationLoaded && t.url);
+    if(!queue.length) return;
+    log('Loading durations for ' + queue.length + ' tracks (concurrency ' + DURATION_CONCURRENCY + ').', 'info');
+    let cursor = 0;
+    async function worker(){
+      while(cursor < queue.length){
+        const item = queue[cursor++];
+        await loadDurationForTrack(item.t, item.idx, owner, repo);
       }
-      a.removeAttribute('src'); a.load();
-    }, {once:true});
-    a.addEventListener('error', () => { a.removeAttribute('src'); a.load(); }, {once:true});
+    }
+    await Promise.all(Array.from({length: Math.min(DURATION_CONCURRENCY, queue.length)}, worker));
+    log('Duration loading finished.', 'info');
   }
 
   /* =========================================================
@@ -1767,7 +1802,6 @@ body {
       `;
       row.addEventListener('click', () => playTrackAtIndex(idx));
       trackListEl.appendChild(row);
-      if(renderIdx < 12) setTimeout(() => loadDurationForTrack(t, idx), renderIdx * 35);
     });
   }
 
@@ -2004,6 +2038,9 @@ body {
       if(!state.tracks.length){renderTrackList(document.getElementById('searchInput').value);renderNowPlaying();updatePlayIcon();}
       else log('Keeping current library; no UI reset.','info');
     }
+
+    // Load every track duration in the background after the library is visible.
+    loadAllDurations(owner, repo).catch(e => log('Duration scan failed: ' + e.message, 'warn'));
 
     try{
       const lastUrl=localStorage.getItem('piratesound.lastUrl')||'';
