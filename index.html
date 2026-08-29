@@ -1054,9 +1054,11 @@ body {
     <h3>Song Speed</h3>
     <p>Choose playback speed.</p>
     <div class="choice-list" id="speedChoices">
-      <button class="choice-btn" data-speed-choice="slow">Slow <span>0.85×</span></button>
+      <button class="choice-btn" data-speed-choice="very-slow">Very Slow <span>0.85×</span></button>
+      <button class="choice-btn" data-speed-choice="slow">Slow <span>0.92×</span></button>
       <button class="choice-btn active" data-speed-choice="normal">Normal <span>1.00×</span></button>
-      <button class="choice-btn" data-speed-choice="fast">Fast <span>1.15×</span></button>
+      <button class="choice-btn" data-speed-choice="fast">Fast <span>1.08×</span></button>
+      <button class="choice-btn" data-speed-choice="very-fast">Very Fast <span>1.15×</span></button>
     </div>
     <div class="modal-actions">
       <button class="modal-secondary" data-close-modal="speedModal">Cancel</button>
@@ -1163,7 +1165,7 @@ body {
     failedTrackAttempts: 0
   };
 
-  const SPEED_RATES = { slow: 0.85, normal: 1.0, fast: 1.15 };
+  const SPEED_RATES = { 'very-slow': 0.85, slow: 0.92, normal: 1.0, fast: 1.08, 'very-fast': 1.15 };
 
 
   /* =========================================================
@@ -1318,9 +1320,13 @@ body {
   function applySpeedFX(speed){
     if(!audioCtx || !toneFilter) return;
     const t = audioCtx.currentTime;
-    if(speed === 'slow'){
-      toneFilter.gain.linearRampToValueAtTime(-2, t+0.4);
+    if(speed === 'very-slow'){
+      toneFilter.gain.linearRampToValueAtTime(-2.5, t+0.4);
+    } else if(speed === 'slow'){
+      toneFilter.gain.linearRampToValueAtTime(-1.2, t+0.4);
     } else if(speed === 'fast'){
+      toneFilter.gain.linearRampToValueAtTime(1.4, t+0.4);
+    } else if(speed === 'very-fast'){
       toneFilter.gain.linearRampToValueAtTime(3, t+0.4);
     } else {
       toneFilter.gain.linearRampToValueAtTime(0, t+0.4);
@@ -1938,11 +1944,11 @@ body {
 
   function syncSpeedButtons(speed){
     const label = document.getElementById('speedValue');
-    if(label) label.textContent = speed.charAt(0).toUpperCase() + speed.slice(1);
+    if(label) label.textContent = speed.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
     document.querySelectorAll('[data-speed-choice]').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-speed-choice') === speed);
     });
-    progressFill.className = 'bar-fill ' + speed;
+    progressFill.className = 'bar-fill ' + speed.replace('very-', '');
   }
   function updateSpeedUI(){ syncSpeedButtons(state.speed); }
 
